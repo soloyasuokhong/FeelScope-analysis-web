@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phân Tích Cảm Xúc Tiếng Việt | AI Sentiment Analysis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="bg-pattern"></div>
+    
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <span class="emoji-bounce">💭</span>
+                </div>
+                <div class="logo-text">
+                    <h1>CẢM XÚC AI</h1>
+                    <p>Phân tích cảm xúc văn bản tiếng Việt</p>
+                </div>
+            </div>
+            <div class="team-badge">
+                <span>👩‍💻</span> Nhóm: Minh
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Input Section -->
+            <section class="input-section">
+                <div class="input-header">
+                    <h2>📝 Nhập văn bản cần phân tích</h2>
+                    <span class="char-count">0 / 5000</span>
+                </div>
+                <textarea 
+                    id="textInput" 
+                    placeholder="Nhập bài viết, tin nhắn, bình luận mạng xã hội... để phân tích cảm xúc"
+                    maxlength="5000"
+                ></textarea>
+                
+                <div class="sample-texts">
+                    <span class="sample-label">Thử với mẫu:</span>
+                    <button class="sample-btn" data-text="Hôm nay thật tuyệt vời! Mình vừa được điểm 10 môn Toán, cả nhà ai cũng vui 😊">😊 Tích cực</button>
+                    <button class="sample-btn" data-text="Thất vọng quá, dịch vụ tệ, nhân viên thái độ kém, không bao giờ quay lại nữa!">😞 Tiêu cực</button>
+                    <button class="sample-btn" data-text="Hôm nay trời nắng, nhiệt độ khoảng 30 độ C, gió nhẹ.">😐 Trung tính</button>
+                </div>
+                
+                <button id="analyzeBtn" class="analyze-btn">
+                    <span class="btn-icon">🔍</span>
+                    <span class="btn-text">Phân tích cảm xúc</span>
+                    <span class="btn-loading">
+                        <span class="spinner"></span>
+                        Đang phân tích...
+                    </span>
+                </button>
+            </section>
+
+            <!-- Result Section -->
+            <section id="resultSection" class="result-section hidden">
+                <div class="result-card">
+                    <div class="result-header">
+                        <h2>📊 Kết quả phân tích</h2>
+                    </div>
+                    
+                    <div class="sentiment-display">
+                        <div id="sentimentEmoji" class="sentiment-emoji">😊</div>
+                        <div id="sentimentLabel" class="sentiment-label">Tích cực</div>
+                    </div>
+                    
+                    <div class="confidence-section">
+                        <div class="confidence-header">
+                            <span>Độ tin cậy</span>
+                            <span id="confidenceValue" class="confidence-value">85%</span>
+                        </div>
+                        <div class="confidence-bar">
+                            <div id="confidenceFill" class="confidence-fill" style="width: 85%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="explanation-section">
+                        <h3>💡 Giải thích</h3>
+                        <p id="explanationText">...</p>
+                    </div>
+                    
+                    <div id="keywordsSection" class="keywords-section">
+                        <h3>🏷️ Từ khóa cảm xúc</h3>
+                        <div id="keywordsList" class="keywords-list">
+                            <!-- Keywords will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Error Section -->
+            <section id="errorSection" class="error-section hidden">
+                <div class="error-card">
+                    <span class="error-icon">⚠️</span>
+                    <p id="errorText">Đã xảy ra lỗi</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>🎓 Dự án học tập - Sử dụng Google Gemini AI</p>
+            <p class="footer-team">Made with ❤️ by Minh</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

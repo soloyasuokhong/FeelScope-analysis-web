@@ -1,0 +1,536 @@
+/* 
+ * Vietnamese Sentiment Analysis - Styles
+ * Nhóm: Nhi, My, Bảo
+ */
+
+:root {
+    /* Color Palette - Warm & Friendly */
+    --primary: #FF6B6B;
+    --primary-dark: #EE5A5A;
+    --secondary: #4ECDC4;
+    --accent: #FFE66D;
+    --dark: #2C3E50;
+    --dark-light: #34495E;
+    --light: #F8F9FA;
+    --white: #FFFFFF;
+    
+    /* Sentiment Colors */
+    --positive: #00C851;
+    --positive-bg: #E8F5E9;
+    --negative: #FF4444;
+    --negative-bg: #FFEBEE;
+    --neutral: #FFBB33;
+    --neutral-bg: #FFF8E1;
+    
+    /* Shadows & Effects */
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 20px rgba(0,0,0,0.12);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.16);
+    
+    /* Transitions */
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: var(--dark);
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Background Pattern */
+.bg-pattern {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255,255,255,0.15) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(255,107,107,0.1) 0%, transparent 30%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Header */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.logo-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--white);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    box-shadow: var(--shadow-md);
+}
+
+.emoji-bounce {
+    animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+.logo-text h1 {
+    color: var(--white);
+    font-size: 1.8rem;
+    font-weight: 700;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+}
+
+.logo-text p {
+    color: rgba(255,255,255,0.9);
+    font-size: 0.9rem;
+    font-weight: 300;
+}
+
+.team-badge {
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+    padding: 10px 20px;
+    border-radius: 30px;
+    color: var(--white);
+    font-weight: 500;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+/* Main Content */
+.main-content {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+/* Input Section */
+.input-section {
+    background: var(--white);
+    border-radius: 24px;
+    padding: 30px;
+    box-shadow: var(--shadow-lg);
+}
+
+.input-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.input-header h2 {
+    font-size: 1.2rem;
+    color: var(--dark);
+    font-weight: 600;
+}
+
+.char-count {
+    color: #999;
+    font-size: 0.85rem;
+}
+
+textarea {
+    width: 100%;
+    min-height: 150px;
+    padding: 20px;
+    border: 2px solid #E8E8E8;
+    border-radius: 16px;
+    font-family: inherit;
+    font-size: 1rem;
+    resize: vertical;
+    transition: var(--transition);
+    background: #FAFAFA;
+    color: #333333;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: var(--white);
+    box-shadow: 0 0 0 4px rgba(255,107,107,0.1);
+}
+
+textarea::placeholder {
+    color: #AAA;
+}
+
+/* Sample Texts */
+.sample-texts {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.sample-label {
+    color: #666;
+    font-size: 0.85rem;
+}
+
+.sample-btn {
+    padding: 8px 16px;
+    border: 1px solid #E0E0E0;
+    background: var(--light);
+    border-radius: 20px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: inherit;
+}
+
+.sample-btn:hover {
+    background: var(--dark);
+    color: var(--white);
+    border-color: var(--dark);
+    transform: translateY(-2px);
+}
+
+/* Analyze Button */
+.analyze-btn {
+    width: 100%;
+    margin-top: 20px;
+    padding: 18px 30px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: var(--white);
+    border: none;
+    border-radius: 16px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-family: inherit;
+    box-shadow: 0 4px 15px rgba(255,107,107,0.4);
+}
+
+.analyze-btn:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(255,107,107,0.5);
+}
+
+.analyze-btn:active:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.analyze-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.analyze-btn .btn-loading {
+    display: none;
+}
+
+.analyze-btn.loading .btn-icon,
+.analyze-btn.loading .btn-text {
+    display: none;
+}
+
+.analyze-btn.loading .btn-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,0.3);
+    border-top-color: var(--white);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Result Section */
+.result-section {
+    animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.result-card {
+    background: var(--white);
+    border-radius: 24px;
+    padding: 30px;
+    box-shadow: var(--shadow-lg);
+}
+
+.result-header h2 {
+    font-size: 1.2rem;
+    color: var(--dark);
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+/* Sentiment Display */
+.sentiment-display {
+    text-align: center;
+    padding: 30px;
+    border-radius: 20px;
+    margin-bottom: 25px;
+    transition: var(--transition);
+}
+
+.sentiment-display.positive {
+    background: var(--positive-bg);
+}
+
+.sentiment-display.negative {
+    background: var(--negative-bg);
+}
+
+.sentiment-display.neutral {
+    background: var(--neutral-bg);
+}
+
+.sentiment-emoji {
+    font-size: 4rem;
+    margin-bottom: 10px;
+    animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes popIn {
+    0% { transform: scale(0); }
+    80% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.sentiment-label {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.sentiment-display.positive .sentiment-label {
+    color: var(--positive);
+}
+
+.sentiment-display.negative .sentiment-label {
+    color: var(--negative);
+}
+
+.sentiment-display.neutral .sentiment-label {
+    color: #F57C00;
+}
+
+/* Confidence Bar */
+.confidence-section {
+    margin-bottom: 25px;
+}
+
+.confidence-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+.confidence-value {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.confidence-bar {
+    height: 12px;
+    background: #E8E8E8;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.confidence-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--secondary), var(--primary));
+    border-radius: 10px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Explanation Section */
+.explanation-section {
+    background: #F8F9FA;
+    padding: 20px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+}
+
+.explanation-section h3 {
+    font-size: 1rem;
+    margin-bottom: 10px;
+    color: var(--dark);
+}
+
+.explanation-section p {
+    color: #555;
+    line-height: 1.6;
+}
+
+/* Keywords Section */
+.keywords-section {
+    background: #F0F4FF;
+    padding: 20px;
+    border-radius: 16px;
+}
+
+.keywords-section h3 {
+    font-size: 1rem;
+    margin-bottom: 15px;
+    color: var(--dark);
+}
+
+.keywords-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.keyword-tag {
+    background: var(--white);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    color: var(--dark-light);
+    border: 1px solid #DDD;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* Error Section */
+.error-section {
+    animation: shake 0.5s ease-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-5px); }
+    40%, 80% { transform: translateX(5px); }
+}
+
+.error-card {
+    background: var(--negative-bg);
+    border: 1px solid var(--negative);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.error-icon {
+    font-size: 1.5rem;
+}
+
+.error-card p {
+    color: var(--negative);
+    font-weight: 500;
+}
+
+/* Hidden Class */
+.hidden {
+    display: none !important;
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    padding: 30px 0;
+    color: rgba(255,255,255,0.8);
+    font-size: 0.9rem;
+}
+
+.footer-team {
+    margin-top: 5px;
+    font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .container {
+        padding: 15px;
+    }
+    
+    .header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .logo {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .logo-text h1 {
+        font-size: 1.5rem;
+    }
+    
+    .input-section,
+    .result-card {
+        padding: 20px;
+    }
+    
+    .sentiment-emoji {
+        font-size: 3rem;
+    }
+    
+    .sentiment-label {
+        font-size: 1.2rem;
+    }
+    
+    .sample-texts {
+        justify-content: center;
+    }
+}
