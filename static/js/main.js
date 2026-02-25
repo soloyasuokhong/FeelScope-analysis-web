@@ -114,11 +114,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isLoading) {
             analyzeBtn.classList.add('loading');
             analyzeBtn.disabled = true;
-            textInput.disabled = true;
         } else {
             analyzeBtn.classList.remove('loading');
             analyzeBtn.disabled = false;
-            textInput.disabled = false;
         }
     }
 
