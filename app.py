@@ -11,8 +11,14 @@ import re
 
 app = Flask(__name__)
 
-# Cấu hình Gemini API
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', 'AIzaSyCvy4VdX-2vCumplrH8OkTuD0X0R4EpD8k')
+# Lấy API key từ biến môi trường
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
+# Kiểm tra trước khi cấu hình
+if not GEMINI_API_KEY:
+    raise ValueError("Missing GEMINI_API_KEY environment variable")
+
+# Cấu hình Gemini
 genai.configure(api_key=GEMINI_API_KEY)
 
 # Khởi tạo model Gemini (sử dụng gemini-1.5-flash có quota cao hơn)
@@ -101,3 +107,4 @@ if __name__ == '__main__':
     print("🚀 Ứng dụng Phân tích Cảm xúc Tiếng Việt")
     print("🌐 Truy cập: http://localhost:5000")
     app.run(debug=True, host='0.0.0.0', port=5000)
+
