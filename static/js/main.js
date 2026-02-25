@@ -1,6 +1,6 @@
 /**
  * Vietnamese Sentiment Analysis - Frontend Logic
- * Nhóm: Nhi, My, Bảo
+ * Nhóm: Minh
  */
 
 document.addEventListener('DOMContentLoaded', function() {
