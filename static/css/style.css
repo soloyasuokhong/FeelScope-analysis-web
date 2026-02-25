@@ -394,6 +394,14 @@ textarea::placeholder {
     transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.confidence-strength {
+    margin-top: 6px;
+    font-size: 0.85rem;
+    color: #666;
+    text-align: right;
+    font-style: italic;
+}
+
 /* Explanation Section */
 .explanation-section {
     background: #F8F9FA;

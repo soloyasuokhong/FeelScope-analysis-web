@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const sentimentDisplay = document.querySelector('.sentiment-display');
     const confidenceValue = document.getElementById('confidenceValue');
     const confidenceFill = document.getElementById('confidenceFill');
+    const confidenceStrength = document.getElementById('confidenceStrength');
     const explanationText = document.getElementById('explanationText');
     const keywordsList = document.getElementById('keywordsList');
     const errorText = document.getElementById('errorText');
@@ -141,6 +142,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const confidence = Math.round(data.confidence);
         confidenceValue.textContent = confidence + '%';
         confidenceFill.style.width = '0%';
+        
+        // Update confidence strength label
+        let strengthLabel = 'Không chắc chắn';
+        if (confidence > 85) {
+            strengthLabel = 'Rất mạnh';
+        } else if (confidence >= 60) {
+            strengthLabel = 'Khá rõ';
+        }
+        confidenceStrength.textContent = strengthLabel;
         
         // Animate confidence bar
         setTimeout(() => {
