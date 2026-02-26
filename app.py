@@ -77,16 +77,16 @@ Lưu ý:
 
     # Xử lý riêng lỗi quota
         if "429" in error_message or "quota" in error_message.lower():
-            return jsonify({
+            return {
                 'success': False,
                 'error': "Bạn đã gửi quá nhiều yêu cầu. Vui lòng đợi khoảng 1 phút rồi thử lại."
-            }), 429
+            }
 
     # Lỗi chung
-        return jsonify({
+        return {
             'success': False,
             'error': "Hệ thống đang quá tải hoặc tạm thời không khả dụng. Vui lòng thử lại sau."
-        }), 503
+        }
 
 @app.route('/')
 def index():
@@ -114,8 +114,5 @@ def analyze():
     result = analyze_sentiment(text)
     return jsonify(result)
 
-import os
 
-if too_many_requests_local:
-    return 429 BEFORE calling Gemini
 
