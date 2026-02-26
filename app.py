@@ -72,21 +72,21 @@ Lưu ý:
             }
             
     except Exception as e:
-    error_message = str(e)
-    print("Gemini API error:", error_message)  # chỉ log nội bộ
+        error_message = str(e)
+        print("Gemini API error:", error_message)  # chỉ log nội bộ
 
     # Xử lý riêng lỗi quota
-    if "429" in error_message or "quota" in error_message.lower():
-        return {
-            'success': False,
-            'error': "Bạn đã gửi quá nhiều yêu cầu. Vui lòng đợi khoảng 1 phút rồi thử lại."
-        }
+        if "429" in error_message or "quota" in error_message.lower():
+            return jsonify({
+                'success': False,
+                'error': "Bạn đã gửi quá nhiều yêu cầu. Vui lòng đợi khoảng 1 phút rồi thử lại."
+            }), 429
 
     # Lỗi chung
-    return {
-        'success': False,
-        'error': "Hệ thống đang quá tải hoặc tạm thời không khả dụng. Vui lòng thử lại sau."
-    }
+        return jsonify({
+            'success': False,
+            'error': "Hệ thống đang quá tải hoặc tạm thời không khả dụng. Vui lòng thử lại sau."
+        }), 503
 
 @app.route('/')
 def index():
