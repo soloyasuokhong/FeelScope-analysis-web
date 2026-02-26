@@ -72,10 +72,21 @@ Lưu ý:
             }
             
     except Exception as e:
+    error_message = str(e)
+    print("Gemini API error:", error_message)  # chỉ log nội bộ
+
+    # Xử lý riêng lỗi quota
+    if "429" in error_message or "quota" in error_message.lower():
         return {
             'success': False,
-            'error': f'Lỗi khi gọi API: {str(e)}'
+            'error': "Bạn đã gửi quá nhiều yêu cầu. Vui lòng đợi khoảng 1 phút rồi thử lại."
         }
+
+    # Lỗi chung
+    return {
+        'success': False,
+        'error': "Hệ thống đang quá tải hoặc tạm thời không khả dụng. Vui lòng thử lại sau."
+    }
 
 @app.route('/')
 def index():
@@ -105,9 +116,6 @@ def analyze():
 
 import os
 
-if __name__ == "__main__":
-    print("🚀 Ứng dụng Phân tích Cảm xúc Tiếng Việt")
-
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+if too_many_requests_local:
+    return 429 BEFORE calling Gemini
 
