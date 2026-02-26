@@ -402,6 +402,73 @@ textarea::placeholder {
     font-style: italic;
 }
 
+/* Emotion main card */
+.emotion-summary {
+    margin-bottom: 20px;
+}
+
+.emotion-main-card {
+    background: #F5F9FF;
+    border-radius: 16px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border: 1px solid rgba(78, 205, 196, 0.2);
+}
+
+.emotion-main-label {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--dark);
+}
+
+.emotion-main-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.emotion-main-tag {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(78, 205, 196, 0.12);
+    color: var(--secondary);
+    font-weight: 500;
+}
+
+.emotion-main-percent {
+    font-weight: 700;
+    color: var(--primary-dark);
+}
+
+/* Emotion chart card */
+.emotion-chart-card {
+    margin-bottom: 20px;
+    background: #FAFBFF;
+    border-radius: 16px;
+    padding: 16px 18px 20px;
+    border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.emotion-chart-card h3 {
+    font-size: 1rem;
+    margin-bottom: 10px;
+    color: var(--dark);
+}
+
+.emotion-chart-wrapper {
+    position: relative;
+    width: 100%;
+    height: 220px;
+}
+
+#emotionChart {
+    width: 100% !important;
+    height: 100% !important;
+}
+
 /* Explanation Section */
 .explanation-section {
     background: #F8F9FA;

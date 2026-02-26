@@ -22,6 +22,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const explanationText = document.getElementById('explanationText');
     const keywordsList = document.getElementById('keywordsList');
     const errorText = document.getElementById('errorText');
+    const detailedSentimentLabel = document.getElementById('detailedSentimentLabel');
+    const emotionMainPercent = document.getElementById('emotionMainPercent');
+    const emotionChartCanvas = document.getElementById('emotionChart');
+    let emotionChart = null;
 
     // Sentiment configuration
     const sentimentConfig = {
@@ -152,6 +156,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         confidenceStrength.textContent = strengthLabel;
         
+        // Update main emotion card
+        if (emotionMainPercent) {
+            emotionMainPercent.textContent = confidence + '%';
+        }
+        if (detailedSentimentLabel) {
+            detailedSentimentLabel.textContent = getDetailedSentimentLabel(config.class, confidence);
+        }
+        
         // Animate confidence bar
         setTimeout(() => {
             confidenceFill.style.width = confidence + '%';
@@ -178,6 +190,95 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Scroll to result
         resultSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function getDetailedSentimentLabel(sentimentClass, confidence) {
+        if (sentimentClass === 'positive') {
+            if (confidence > 90) return 'Rất tích cực';
+            if (confidence >= 75) return 'Hạnh phúc';
+            return 'Tích cực';
+        }
+
+        if (sentimentClass === 'negative') {
+            if (confidence > 90) return 'Rất tiêu cực';
+            if (confidence >= 75) return 'Tức giận';
+            if (confidence >= 60) return 'Buồn';
+            return 'Sợ hãi';
+        }
+
+        if (confidence > 80) return 'Trung lập';
+        if (confidence >= 60) return 'Ngạc nhiên';
+        return 'Không chắc chắn';
+    }
+
+    function updateEmotionChart(sentimentClass, confidence, data) {
+        if (!emotionChartCanvas || typeof Chart === 'undefined') {
+            return;
+        }
+
+        const ctx = emotionChartCanvas.getContext('2d');
+        const labels = ['Tích cực', 'Trung lập', 'Tiêu cực'];
+
+        let positive = 0;
+        let neutral = 0;
+        let negative = 0;
+
+        if (data && data.distribution && typeof data.distribution === 'object') {
+            positive = Math.max(0, data.distribution.positive || 0);
+            neutral = Math.max(0, data.distribution.neutral || 0);
+            negative = Math.max(0, data.distribution.negative || 0);
+        } else {
+            if (sentimentClass === 'positive') {
+                positive = 100;
+            } else if (sentimentClass === 'negative') {
+                negative = 100;
+            } else {
+                neutral = 100;
+            }
+        }
+
+        const dataSet = [positive, neutral, negative];
+
+        if (emotionChart) {
+            emotionChart.data.datasets[0].data = dataSet;
+            emotionChart.update();
+            return;
+        }
+
+        emotionChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: dataSet,
+                    backgroundColor: [
+                        'rgba(0, 200, 81, 0.8)',
+                        'rgba(255, 187, 51, 0.8)',
+                        'rgba(255, 68, 68, 0.8)'
+                    ],
+                    borderWidth: 1,
+                    borderColor: '#FFFFFF'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                return `${label}: ${value.toFixed(1)}%`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
 
     // Show error
