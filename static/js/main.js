@@ -146,6 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const confidence = Math.round(data.confidence);
         confidenceValue.textContent = confidence + '%';
         confidenceFill.style.width = '0%';
+        console.log('Emotion data for chart:', data);
         
         // Update confidence strength label
         let strengthLabel = 'Không chắc chắn';
@@ -163,6 +164,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (detailedSentimentLabel) {
             detailedSentimentLabel.textContent = getDetailedSentimentLabel(config.class, confidence);
         }
+        updateEmotionChart(config.class, confidence, data);
         
         // Animate confidence bar
         setTimeout(() => {
