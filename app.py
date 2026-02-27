@@ -10,7 +10,7 @@ import json
 import re
 from typing import List, Optional, Dict, Any
 from typing import Literal
-from pydantic import BaseModel, ValidationError, validator
+from pydantic import BaseModel, ValidationError, validator, root_validator
 import logging
 
 app = Flask(__name__)
@@ -131,12 +131,18 @@ class EmotionResponse(BaseModel):
 
     sentiment: Literal["positive", "negative", "neutral"]
     confidence: float  # luôn chuẩn hóa về khoảng [0, 1]
+    probabilities: Dict[str, float]
+    explanation: Optional[str] = None
+    keywords: Optional[List[str]] = None
 
     @validator("confidence", pre=True)
-    def normalize_and_check_range(cls, value: Any) -> float:
+    def normalize_confidence(cls, value: Any) -> float:
         """
-        Nhận 0–1 hoặc 0–100, chuẩn hóa về 0–1 và validate trong model.
+        Chấp nhận 0–1 hoặc 0–100, chuẩn hóa về 0–1.
+        Giá trị này sẽ được đồng bộ lại từ probabilities trong root_validator.
         """
+        if value is None:
+            return 0.0
         if not isinstance(value, (int, float)):
             raise ValueError("confidence must be numeric")
         v = float(value)
@@ -148,9 +154,52 @@ class EmotionResponse(BaseModel):
             norm = v / 100.0
         else:
             raise ValueError("confidence out of expected range")
-        if not 0.0 <= norm <= 1.0:
-            raise ValueError("confidence must be between 0 and 1 after normalization")
         return norm
+
+    @validator("probabilities", pre=True)
+    def validate_and_normalize_probabilities(cls, value: Any) -> Dict[str, float]:
+        """
+        Đảm bảo có đủ 3 key positive/neutral/negative, giá trị >= 0,
+        tổng gần bằng 100 (±2%), sau đó normalize chính xác về 100.
+        """
+        if not isinstance(value, dict):
+            raise ValueError("probabilities must be an object")
+
+        required_keys = ["positive", "neutral", "negative"]
+        probs: Dict[str, float] = {}
+
+        for key in required_keys:
+            raw_v = value.get(key)
+            if not isinstance(raw_v, (int, float)):
+                raise ValueError(f"probabilities.{key} must be a number")
+            v = float(raw_v)
+            if v < 0:
+                raise ValueError(f"probabilities.{key} must be non-negative")
+            probs[key] = v
+
+        total = sum(probs.values())
+        if total <= 0:
+            raise ValueError("sum of probabilities must be > 0")
+
+        # Cho phép sai số ±2%
+        if not (98.0 <= total <= 102.0):
+            raise ValueError("sum of probabilities must be close to 100")
+
+        factor = 100.0 / total
+        normalized = {k: v * factor for k, v in probs.items()}
+        return normalized
+
+    @root_validator
+    def sync_confidence_with_probabilities(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Sau khi probabilities đã chuẩn hóa, set confidence = prob của sentiment chính (0–1).
+        """
+        sentiment = values.get("sentiment")
+        probs = values.get("probabilities") or {}
+        if sentiment in probs:
+            prob_percent = probs[sentiment]
+            values["confidence"] = prob_percent / 100.0
+        return values
 
 
 def analyze_sentiment(text):
@@ -168,7 +217,12 @@ Văn bản cần phân tích:
 Hãy trả về kết quả theo định dạng JSON như sau (chỉ trả về JSON, không có text khác):
 {{
     "sentiment": "positive" hoặc "negative" hoặc "neutral",
-    "confidence": số từ 0 đến 100 (độ tin cậy phần trăm),
+    "confidence": số từ 0 đến 100 (độ tin cậy phần trăm của cảm xúc chính),
+    "probabilities": {{
+        "positive": số từ 0 đến 100,
+        "neutral": số từ 0 đến 100,
+        "negative": số từ 0 đến 100
+    }},
     "explanation": "giải thích ngắn gọn bằng tiếng Việt tại sao bạn phân loại như vậy",
     "keywords": ["từ khóa 1", "từ khóa 2"] (các từ/cụm từ thể hiện cảm xúc chính)
 }}
@@ -200,6 +254,9 @@ Lưu ý:
             validated = EmotionResponse(
                 sentiment=result.get("sentiment"),
                 confidence=result.get("confidence"),
+                probabilities=result.get("probabilities"),
+                explanation=result.get("explanation"),
+                keywords=result.get("keywords"),
             )
         except (ValidationError, ValueError) as ve:
             logger.warning("EmotionResponse validation failed: %s", ve)
@@ -210,12 +267,13 @@ Lưu ý:
         confidence_percent = validated.confidence * 100.0
 
         return {
-            'success': True,
-            'sentiment': sentiment,
-            'confidence': confidence_percent,
-            'confidence_raw': validated.confidence,
-            'explanation': result.get('explanation', 'Không thể phân tích'),
-            'keywords': result.get('keywords', []),
+            "success": True,
+            "sentiment": sentiment,
+            "confidence": confidence_percent,
+            "confidence_raw": validated.confidence,
+            "probabilities": validated.probabilities,
+            "explanation": validated.explanation or "Không thể phân tích",
+            "keywords": validated.keywords or [],
         }
 
     except Exception as e:

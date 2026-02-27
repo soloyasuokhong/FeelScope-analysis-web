@@ -27,6 +27,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const emotionChartCanvas = document.getElementById('emotionChart');
     let emotionChart = null;
 
+    // Safe numeric parsing helper for chart data
+    function safeNumber(value) {
+        if (value === null || value === undefined) return 0;
+        const cleaned = String(value).replace('%', '').trim();
+        const parsed = parseFloat(cleaned);
+        return isNaN(parsed) ? 0 : parsed;
+    }
+
     // Sentiment configuration
     const sentimentConfig = {
         positive: {
@@ -225,11 +233,19 @@ document.addEventListener('DOMContentLoaded', function() {
         let neutral = 0;
         let negative = 0;
 
-        if (data && data.distribution && typeof data.distribution === 'object') {
+        // Ưu tiên dùng probabilities thực từ backend nếu có
+        if (data && data.probabilities && typeof data.probabilities === 'object') {
+            const probs = data.probabilities;
+            positive = Math.max(0, safeNumber(probs.positive));
+            neutral = Math.max(0, safeNumber(probs.neutral));
+            negative = Math.max(0, safeNumber(probs.negative));
+        } else if (data && data.distribution && typeof data.distribution === 'object') {
+            // Fallback cho backend cũ sử dụng distribution
             positive = Math.max(0, data.distribution.positive || 0);
             neutral = Math.max(0, data.distribution.neutral || 0);
             negative = Math.max(0, data.distribution.negative || 0);
         } else {
+            // Fallback cuối cùng: nếu không có phân phối, gán 100% cho cảm xúc chính
             if (sentimentClass === 'positive') {
                 positive = 100;
             } else if (sentimentClass === 'negative') {
@@ -241,10 +257,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const dataSet = [positive, neutral, negative];
 
+        // Destroy chart cũ để tránh memory leak trước khi tạo chart mới
         if (emotionChart) {
-            emotionChart.data.datasets[0].data = dataSet;
-            emotionChart.update();
-            return;
+            emotionChart.destroy();
+            emotionChart = null;
         }
 
         emotionChart = new Chart(ctx, {
@@ -273,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         callbacks: {
                             label: function(context) {
                                 const label = context.label || '';
-                                const value = context.parsed || 0;
+                                const value = safeNumber(context.raw);
                                 return `${label}: ${value.toFixed(1)}%`;
                             }
                         }
