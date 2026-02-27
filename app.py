@@ -1,6 +1,6 @@
 """
 Ứng dụng Phân tích Cảm xúc Văn bản Tiếng Việt
-Sử dụng Google Gemini API
+Refactored Clean Architecture Version
 """
 
 from flask import Flask, render_template, request, jsonify
@@ -14,25 +14,25 @@ from pydantic import BaseModel, ValidationError, validator, root_validator
 import logging
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Lấy API key từ biến môi trường
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+# ========================
+# Gemini Config
+# ========================
 
-# Kiểm tra trước khi cấu hình
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 if not GEMINI_API_KEY:
     raise ValueError("Missing GEMINI_API_KEY environment variable")
 
-# Cấu hình Gemini
 genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel("gemini-2.5-flash")
 
-# Khởi tạo model Gemini (sử dụng gemini-1.5-flash có quota cao hơn)
-model = genai.GenerativeModel('gemini-2.5-flash')
 
 # ========================
-# Security: Prompt-Injection Guards (3 layers)
+# Security Layer
 # ========================
-# Layer 1: Input guard keywords (case-insensitive)
+
 DANGEROUS_INPUT_KEYWORDS: List[str] = [
     "ignore previous",
     "system prompt",
@@ -46,285 +46,233 @@ DANGEROUS_INPUT_KEYWORDS: List[str] = [
     "print config",
 ]
 
-# Layer 3: Output guard patterns (regex, tránh false positive với từ đơn lẻ)
 SENSITIVE_OUTPUT_REGEXES: List[re.Pattern] = [
-    # API key-like tokens (ví dụ: sk-..., AIza..., chuỗi dài base64-ish)
     re.compile(r"\b(?:sk|rk|pk|AIza)[A-Za-z0-9_\-]{16,}\b"),
-    # JSON config dump chứa khóa nhạy cảm
     re.compile(r'"(?:api_key|access_token|secret|password)"\s*:\s*"[A-Za-z0-9_\-]{8,}"'),
-    # Biến môi trường / cấu hình nhạy cảm dạng KEY=VALUE
     re.compile(r"\b(?:GEMINI_API_KEY|OPENAI_API_KEY|DATABASE_URL|FLASK_ENV|SECRET_KEY)\s*=\s*.+"),
-    # System prompt / instruction dump rõ ràng
-    re.compile(r"begin\s+system\s+prompt", re.IGNORECASE),
-    re.compile(r"do\s+not\s+share\s+this\s+prompt", re.IGNORECASE),
-    re.compile(r"you\s+are\s+a\s+large\s+language\s+model", re.IGNORECASE),
 ]
 
 
 def contains_any_keyword(text: str, keywords: List[str]) -> bool:
-    """
-    Layer 1/3 helper — kiểm tra keyword không phân biệt hoa thường.
-    """
     haystack = (text or "").lower()
-    for kw in keywords:
-        if (kw or "").lower() in haystack:
-            return True
-    return False
+    return any((kw or "").lower() in haystack for kw in keywords)
 
 
 def check_sensitive_output(text: str) -> bool:
-    """
-    Layer 3: kiểm tra output model có lộ thông tin nhạy cảm (API key, config dump...).
-    Không match các từ đơn lẻ bình thường để tránh false positive.
-    """
-    haystack = text or ""
     for pattern in SENSITIVE_OUTPUT_REGEXES:
-        if pattern.search(haystack):
+        if pattern.search(text or ""):
             return True
     return False
 
 
 def strict_json_from_model_text(model_text: str) -> Optional[Dict[str, Any]]:
-    """
-    Layer 2: Strict JSON output parsing.
-    Accept only pure JSON (optionally wrapped in ```json ... ```), no extra text.
-    KHÔNG raise exception — trả về None nếu không parse được.
-    """
     raw = (model_text or "").strip()
 
-    # Allow a single fenced code block: ```json {..} ```
     fence_match = re.match(r"^\s*```(?:json)?\s*([\s\S]*?)\s*```\s*$", raw, flags=re.IGNORECASE)
     if fence_match:
         raw = fence_match.group(1).strip()
 
-    # Trường hợp lý tưởng: toàn bộ chuỗi là JSON object
     if raw.startswith("{") and raw.endswith("}"):
         try:
             parsed = json.loads(raw)
+            if isinstance(parsed, dict):
+                return parsed
         except Exception:
             return None
-        if isinstance(parsed, dict):
-            return parsed
-        return None
 
-    # Nếu có text bao quanh, thử trích JSON đầu tiên dạng {...}
     json_match = re.search(r"\{[\s\S]*\}", raw)
     if not json_match:
         return None
 
     try:
         parsed = json.loads(json_match.group(0))
+        if isinstance(parsed, dict):
+            return parsed
     except Exception:
         return None
 
-    if not isinstance(parsed, dict):
-        return None
+    return None
 
-    return parsed
 
+# ========================
+# Schema Validation Layer
+# ========================
 
 class EmotionResponse(BaseModel):
-    """
-    Layer 2: Schema validation cho phản hồi AI.
-    Model nội bộ, không làm thay đổi JSON trả ra frontend.
-    """
-
     sentiment: Literal["positive", "negative", "neutral"]
-    confidence: float  # luôn chuẩn hóa về khoảng [0, 1]
+    confidence: float
     probabilities: Dict[str, float]
     explanation: Optional[str] = None
     keywords: Optional[List[str]] = None
 
     @validator("confidence", pre=True)
-    def normalize_confidence(cls, value: Any) -> float:
-        """
-        Chấp nhận 0–1 hoặc 0–100, chuẩn hóa về 0–1.
-        Giá trị này sẽ được đồng bộ lại từ probabilities trong root_validator.
-        """
-        if value is None:
-            return 0.0
+    def normalize_confidence(cls, value):
         if not isinstance(value, (int, float)):
             raise ValueError("confidence must be numeric")
         v = float(value)
-        if v < 0:
-            raise ValueError("confidence must be non-negative")
-        if v <= 1.0:
-            norm = v
-        elif v <= 100.0:
-            norm = v / 100.0
-        else:
-            raise ValueError("confidence out of expected range")
-        return norm
+        return v / 100.0 if v > 1 else v
 
     @validator("probabilities", pre=True)
-    def validate_and_normalize_probabilities(cls, value: Any) -> Dict[str, float]:
-        """
-        Đảm bảo có đủ 3 key positive/neutral/negative, giá trị >= 0,
-        tổng gần bằng 100 (±2%), sau đó normalize chính xác về 100.
-        """
+    def validate_probabilities(cls, value):
         if not isinstance(value, dict):
-            raise ValueError("probabilities must be an object")
+            raise ValueError("probabilities must be object")
 
-        required_keys = ["positive", "neutral", "negative"]
-        probs: Dict[str, float] = {}
+        required = ["positive", "neutral", "negative"]
+        probs = {}
 
-        for key in required_keys:
-            raw_v = value.get(key)
-            if not isinstance(raw_v, (int, float)):
-                raise ValueError(f"probabilities.{key} must be a number")
-            v = float(raw_v)
+        for key in required:
+            v = float(value.get(key, 0))
             if v < 0:
-                raise ValueError(f"probabilities.{key} must be non-negative")
+                raise ValueError("probabilities must be non-negative")
             probs[key] = v
 
         total = sum(probs.values())
         if total <= 0:
-            raise ValueError("sum of probabilities must be > 0")
-
-        # Cho phép sai số ±2%
-        if not (98.0 <= total <= 102.0):
-            raise ValueError("sum of probabilities must be close to 100")
+            raise ValueError("invalid probabilities sum")
 
         factor = 100.0 / total
-        normalized = {k: v * factor for k, v in probs.items()}
-        return normalized
+        return {k: v * factor for k, v in probs.items()}
 
     @root_validator
-    def sync_confidence_with_probabilities(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Sau khi probabilities đã chuẩn hóa, set confidence = prob của sentiment chính (0–1).
-        """
+    def sync_confidence(cls, values):
         sentiment = values.get("sentiment")
-        probs = values.get("probabilities") or {}
+        probs = values.get("probabilities", {})
         if sentiment in probs:
-            prob_percent = probs[sentiment]
-            values["confidence"] = prob_percent / 100.0
+            values["confidence"] = probs[sentiment] / 100.0
         return values
 
 
-def analyze_sentiment(text):
-    """
-    Phân tích cảm xúc văn bản tiếng Việt sử dụng Gemini API
-    Trả về: sentiment (positive/negative/neutral), confidence, explanation
-    """
-    
-    prompt = f"""Bạn là một chuyên gia phân tích cảm xúc văn bản tiếng Việt. 
-Hãy phân tích đoạn văn bản sau và xác định cảm xúc của nó.
+# ========================
+# AI Layer
+# ========================
 
-Văn bản cần phân tích:
+def call_gemini(prompt: str) -> str:
+    response = model.generate_content(prompt)
+    return (response.text or "").strip()
+
+
+# ========================
+# Service Layer
+# ========================
+
+def sentiment_service(text: str) -> Dict[str, Any]:
+
+    prompt = f"""
+Bạn là chuyên gia phân tích cảm xúc tiếng Việt.
+
+Văn bản:
 "{text}"
 
-Hãy trả về kết quả theo định dạng JSON như sau (chỉ trả về JSON, không có text khác):
+Trả về JSON:
 {{
-    "sentiment": "positive" hoặc "negative" hoặc "neutral",
-    "confidence": số từ 0 đến 100 (độ tin cậy phần trăm của cảm xúc chính),
+    "sentiment": "positive|neutral|negative",
+    "confidence": số 0-100,
     "probabilities": {{
-        "positive": số từ 0 đến 100,
-        "neutral": số từ 0 đến 100,
-        "negative": số từ 0 đến 100
+        "positive": số,
+        "neutral": số,
+        "negative": số
     }},
-    "explanation": "giải thích ngắn gọn bằng tiếng Việt tại sao bạn phân loại như vậy",
-    "keywords": ["từ khóa 1", "từ khóa 2"] (các từ/cụm từ thể hiện cảm xúc chính)
+    "explanation": "...",
+    "keywords": []
 }}
-
-Lưu ý:
-- positive: cảm xúc tích cực, vui vẻ, hài lòng, yêu thích
-- negative: cảm xúc tiêu cực, buồn, tức giận, không hài lòng  
-- neutral: trung tính, không thể hiện cảm xúc rõ ràng
+Chỉ trả về JSON.
 """
-    
+
     try:
-        response = model.generate_content(prompt)
-        result_text = (response.text or "").strip()
-        logger.info("Gemini call succeeded, output length=%d", len(result_text))
+        result_text = call_gemini(prompt)
 
-        # Layer 3 — OUTPUT GUARD: chặn khi có pattern thực sự nhạy cảm
         if check_sensitive_output(result_text):
-            logger.warning("Validation error: sensitive pattern detected in model output")
             return {"success": False, "error": "Phản hồi AI không hợp lệ."}
 
-        # Layer 2 — STRICT JSON PARSING: chỉ parse JSON thuần (hoặc fenced JSON)
-        result = strict_json_from_model_text(result_text)
-        if result is None:
-            logger.warning("Validation error: cannot parse strict JSON from model output")
+        parsed = strict_json_from_model_text(result_text)
+        if parsed is None:
             return {"success": False, "error": "Phản hồi AI không hợp lệ."}
 
-        # Robust schema validation dùng Pydantic (single source of truth)
-        try:
-            validated = EmotionResponse(
-                sentiment=result.get("sentiment"),
-                confidence=result.get("confidence"),
-                probabilities=result.get("probabilities"),
-                explanation=result.get("explanation"),
-                keywords=result.get("keywords"),
-            )
-        except (ValidationError, ValueError) as ve:
-            logger.warning("EmotionResponse validation failed: %s", ve)
-            return {"success": False, "error": "Phản hồi AI không hợp lệ."}
-
-        # Nếu hợp lệ: giữ sentiment, chuyển confidence về phần trăm cho frontend
-        sentiment = validated.sentiment
-        confidence_percent = validated.confidence * 100.0
+        validated = EmotionResponse(**parsed)
 
         return {
             "success": True,
-            "sentiment": sentiment,
-            "confidence": confidence_percent,
+            "sentiment": validated.sentiment,
+            "confidence": validated.confidence * 100,
             "confidence_raw": validated.confidence,
             "probabilities": validated.probabilities,
-            "explanation": validated.explanation or "Không thể phân tích",
+            "explanation": validated.explanation or "",
             "keywords": validated.keywords or [],
         }
 
     except Exception as e:
-        error_message = str(e)
-        logger.error("Gemini API error: %s", error_message)
-
-        # Xử lý riêng lỗi quota
-        if "429" in error_message or "quota" in error_message.lower():
-            return {
-                'success': False,
-                'error': "Bạn đã gửi quá nhiều yêu cầu. Vui lòng đợi khoảng 1 phút rồi thử lại."
-            }
-
-        # Lỗi chung
+        logger.error("Sentiment service error: %s", str(e))
         return {
-            'success': False,
-            'error': "Hệ thống đang quá tải hoặc tạm thời không khả dụng. Vui lòng thử lại sau."
+            "success": False,
+            "error": "Hệ thống tạm thời không khả dụng."
         }
+
+
+# ========================
+# Routes
+# ========================
 
 @app.route('/')
 def index():
-    """Trang chủ"""
     return render_template('index.html')
+
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    """API endpoint để phân tích cảm xúc"""
     data = request.get_json()
-    text = data.get('text', '').strip()
-    
+    text = (data.get("text") or "").strip()
+
     if not text:
-        return jsonify({
-            'success': False,
-            'error': 'Vui lòng nhập văn bản cần phân tích'
-        })
-    
+        return jsonify({"success": False, "error": "Vui lòng nhập văn bản."})
+
     if len(text) > 5000:
-        return jsonify({
-            'success': False,
-            'error': 'Văn bản quá dài (tối đa 5000 ký tự)'
-        })
+        return jsonify({"success": False, "error": "Văn bản quá dài."})
 
-    # Layer 1 — INPUT GUARD: chặn keyword nguy hiểm trước khi gọi Gemini
     if contains_any_keyword(text, DANGEROUS_INPUT_KEYWORDS):
-        return jsonify({
-            'success': False,
-            'error': 'Nội dung không hợp lệ.'
-        })
-    
-    result = analyze_sentiment(text)
-    return jsonify(result)
+        return jsonify({"success": False, "error": "Nội dung không hợp lệ."})
 
+    return jsonify(sentiment_service(text))
+
+
+@app.route('/generate_and_analyze', methods=['POST'])
+def generate_and_analyze():
+    data = request.get_json()
+    prompt = (data.get("prompt") or "").strip()
+
+    if not prompt:
+        return jsonify({"success": False, "error": "Vui lòng nhập yêu cầu."})
+
+    if len(prompt) > 500:
+        return jsonify({"success": False, "error": "Yêu cầu quá dài."})
+
+    if contains_any_keyword(prompt, DANGEROUS_INPUT_KEYWORDS):
+        return jsonify({"success": False, "error": "Nội dung không hợp lệ."})
+
+    try:
+        generation_prompt = f"""
+Viết nội dung theo yêu cầu sau:
+"{prompt}"
+Chỉ trả về nội dung văn bản.
+"""
+
+        generated_text = call_gemini(generation_prompt)
+
+        if check_sensitive_output(generated_text):
+            return jsonify({"success": False, "error": "Phản hồi AI không hợp lệ."})
+
+        sentiment_result = sentiment_service(generated_text)
+
+        if not sentiment_result.get("success"):
+            return jsonify(sentiment_result)
+
+        return jsonify({
+            "success": True,
+            "generated_text": generated_text,
+            **sentiment_result
+        })
+
+    except Exception as e:
+        logger.error("Generate error: %s", str(e))
+        return jsonify({"success": False, "error": "Không thể tạo nội dung."})
 
 
